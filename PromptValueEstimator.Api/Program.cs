@@ -1,10 +1,12 @@
 ﻿using MediatR;
-using PromptValueEstimator.Application;
-using PromptValueEstimator.Application.Features.Estimator;
-using PromptValueEstimator.Application.Abstractions;
 using Microsoft.Extensions.Options;
-using PromptValueEstimator.Infrastructure.Serpstat;
 using Microsoft.OpenApi.Models;
+using PromptValueEstimator.Application;
+using PromptValueEstimator.Application.Abstractions;
+using PromptValueEstimator.Application.Features.Estimate;
+using PromptValueEstimator.Application.Features.Estimator;
+using PromptValueEstimator.Infrastructure.KeywordExpansion;
+using PromptValueEstimator.Infrastructure.Serpstat;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +31,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(ApplicationAssemblyMarker).Assembly));
 
-builder.Services.AddScoped<IPromptEstimator, PromptEstimator>();
+
 builder.Services.AddMemoryCache();
 
 // ============================
@@ -48,8 +50,15 @@ builder.Services.AddHttpClient<SerpstatKeywordVolumeProvider>((sp, http) =>
     http.BaseAddress = new Uri(o.BaseUrl);
     http.Timeout = TimeSpan.FromSeconds(o.TimeoutSeconds);
 });
-builder.Services.AddScoped<IKeywordExpansionClient, SerpstatKeywordExpansionClient>();
-builder.Services.AddScoped<IKeywordVolumeProvider, SerpstatKeywordVolumeProvider>();
+
+
+
+builder.Services.AddScoped<IKeywordSeedProvider, KeywordSeedProvider>();
+builder.Services.AddScoped<IKeywordRelationProvider, KeywordRelationProvider>();
+builder.Services.AddHttpClient<IKeywordVolumeProvider, SerpstatKeywordVolumeProvider>();
+builder.Services.AddScoped<IPromptEstimator, PromptEstimator>();
+
+
 
 var app = builder.Build();
 

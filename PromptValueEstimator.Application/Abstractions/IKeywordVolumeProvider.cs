@@ -1,14 +1,13 @@
-﻿namespace PromptValueEstimator.Application.Abstractions;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
-public interface IKeywordVolumeProvider
+namespace PromptValueEstimator.Application.Abstractions
 {
     /// <summary>
-    /// Bir veya birden fazla anahtar kelime için aylık arama hacmini döndürür.
-    /// Key: keyword, Value: search volume (int)
+    /// Provides keyword search volume using external APIs (e.g., Serpstat).
     /// </summary>
-    Task<IDictionary<string, int>> GetMonthlySearchVolumeAsync(
-        IEnumerable<string> phrases,
-        string languageCode,
-        string geoTarget,
-        CancellationToken ct);
+    public interface IKeywordVolumeProvider
+    {
+        Task<int> GetVolumeAsync(string keyword, CancellationToken ct);
+    }
 }
