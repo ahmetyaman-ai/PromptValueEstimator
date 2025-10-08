@@ -8,6 +8,10 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Console.WriteLine($"Starting PromptValueEstimator API...");
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"Current Time (UTC): {DateTime.UtcNow}");
+
 // ============================
 // 🔹 1. Swagger + Servis Tanımları
 // ============================
@@ -52,6 +56,7 @@ var app = builder.Build();
 // ============================
 // 🔹 3. Swagger UI
 // ============================
+// Swagger sadece Development ortamında aktif
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -60,7 +65,14 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "PromptValueEstimator.Api v1");
         c.RoutePrefix = "swagger";
     });
+
+    Console.WriteLine("Swagger UI is enabled (Development environment).");
 }
+else
+{
+    Console.WriteLine("Swagger UI is disabled (Production environment).");
+}
+
 
 // ============================
 // 🔹 4. Health Check Endpoint
