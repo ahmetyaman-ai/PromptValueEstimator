@@ -2,61 +2,65 @@
 using Microsoft.Extensions.Options;
 using PromptValueEstimator.Application.Abstractions;
 
-namespace PromptValueEstimator.Infrastructure.Serpstat
+namespace PromptValueEstimator.Infrastructure.Serpstat;
+
+public sealed class SerpstatKeywordVolumeProvider : IKeywordVolumeProvider
 {
-    public class SerpstatKeywordVolumeProvider : IKeywordVolumeProvider
+    private readonly HttpClient _httpClient;
+    private readonly SerpstatOptions _options;
+
+    public SerpstatKeywordVolumeProvider(HttpClient httpClient, IOptions<SerpstatOptions> options)
     {
-        private readonly HttpClient _httpClient;
-        private readonly SerpstatOptions _options;
+        _httpClient = httpClient;
+        _options = options.Value;
+    }
 
-        public SerpstatKeywordVolumeProvider(HttpClient httpClient, IOptions<SerpstatOptions> options)
+    public async Task<int> GetVolumeAsync(string keyword, CancellationToken ct)
+    {
+        try
         {
-            _httpClient = httpClient;
-            _options = options.Value;
-        }
-
-        public Task<IDictionary<string, int>> GetMonthlySearchVolumeAsync(IEnumerable<string> phrases, string languageCode, string geoTarget, CancellationToken ct)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<int> GetVolumeAsync(string keyword, CancellationToken ct = default)
-        {
-            try
+            var requestBody = new
             {
-                var request = new
+                id = 1,
+                method = "KeywordsInfo",
+                @params = new
                 {
-                    id = 1,
-                    method = "KeywordsVolume",
-                    @params = new
-                    {
-                        phrases = new[] { keyword },
-                        token = _options.Token
-                    }
-                };
+                    query = keyword,
+                    token = _options.Token,
+                    se = "g_us" // Google US (ülke kodu)
+                }
+            };
 
-                var response = await _httpClient.PostAsJsonAsync("", request, ct);
-                response.EnsureSuccessStatusCode();
+            var response = await _httpClient.PostAsJsonAsync("", requestBody, ct);
+            response.EnsureSuccessStatusCode();
 
-                var json = await response.Content.ReadFromJsonAsync<SerpstatVolumeResponse>(cancellationToken: ct);
-                var value = json?.result?.data?.FirstOrDefault().Value ?? 0;
-                return value;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Serpstat] Volume lookup failed for '{keyword}': {ex.Message}");
-                return 0; // fallback
-            }
+            var json = await response.Content.ReadFromJsonAsync<SerpstatVolumeResponse>(cancellationToken: ct);
+
+            // "volume" değeri result.keywords dizisinden gelir
+            var volume = json?.result?.keywords?.FirstOrDefault()?.volume ?? 0;
+            return volume;
         }
-    }
-
-    public class SerpstatVolumeResponse
-    {
-        public Result? result { get; set; }
-
-        public class Result
+        catch (Exception ex)
         {
-            public Dictionary<string, int>? data { get; set; }
+            Console.WriteLine($"[Serpstat] volume lookup failed for '{keyword}': {ex.Message}");
+            return 0; // fallback
         }
     }
+}
+
+// === DTO modelleri ===
+public class SerpstatVolumeResponse
+{
+    public SerpstatResult? result { get; set; }
+}
+
+public class SerpstatResult
+{
+    public List<SerpstatKeyword>? keywords { get; set; }
+}
+
+public class SerpstatKeyword
+{
+    public string? keyword { get; set; }
+    public int? volume { get; set; }
 }
